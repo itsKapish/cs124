@@ -1,0 +1,861 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Slotwise</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: a week planner on the left, a live rec-center slot board on the right; goals strip on top ties them together. */
+:root {
+  --bg: #EEF1F0;
+  --surface: #FFFFFF;
+  --surface-2: #E4E9E7;
+  --ink: #16201C;
+  --muted: #56645E;
+  --line: #D3DBD8;
+  --accent: #D9531F;
+  --accent-ink: #FFFFFF;
+  --ok: #23804F;
+  --warn: #A86F05;
+  --bad: #BF3A2B;
+  --t-lift: #D9531F;
+  --t-swim: #1F74B8;
+  --t-climb: #8050BE;
+  --t-court: #2E8C5E;
+  --t-yoga: #BC4480;
+  --commit: #62716B;
+  --font-display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --hour: 44px;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1413; --surface: #182120; --surface-2: #212C29; --ink: #E6EDEA; --muted: #98A7A1; --line: #2C3935;
+    --accent: #F2733F; --accent-ink: #1A0D06; --ok: #4CC486; --warn: #E3AA3A; --bad: #F06B5B;
+    --t-lift: #F2733F; --t-swim: #55A6EA; --t-climb: #AE86EC; --t-court: #52C08A; --t-yoga: #EB78B2; --commit: #8C9C96;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F1413; --surface: #182120; --surface-2: #212C29; --ink: #E6EDEA; --muted: #98A7A1; --line: #2C3935;
+  --accent: #F2733F; --accent-ink: #1A0D06; --ok: #4CC486; --warn: #E3AA3A; --bad: #F06B5B;
+  --t-lift: #F2733F; --t-swim: #55A6EA; --t-climb: #AE86EC; --t-court: #52C08A; --t-yoga: #EB78B2; --commit: #8C9C96;
+  color-scheme: dark;
+}
+html, body { background: var(--bg); color: var(--ink); }
+body { margin: 0; font: 15px/1.45 var(--font-body); }
+* { box-sizing: border-box; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.num, .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 12px; }
+
+.wrap { max-width: 1380px; margin: 0 auto; padding-inline: 20px; padding-block: 16px 40px; display: grid; gap: 16px; }
+@media (max-width: 520px) { .wrap { padding-inline: 16px; } }
+
+/* Header */
+.top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+.brand { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-right: auto; }
+.brand h1 { font: 800 34px/1 var(--font-display); letter-spacing: .01em; margin: 0; text-transform: uppercase; }
+.brand h1 span { color: var(--accent); }
+.brand p { margin: 0; color: var(--muted); font-size: 14px; }
+.weeknav { display: flex; align-items: center; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+.weeknav button { border: 0; background: transparent; width: 32px; height: 32px; border-radius: 999px; font-size: 18px; line-height: 1; }
+.weeknav button:hover:not(:disabled) { background: var(--surface-2); }
+.weeknav button:disabled { opacity: .35; cursor: default; }
+.weeknav .wk { min-width: 150px; text-align: center; font-weight: 600; font-size: 14px; }
+.weeknav .wk small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
+.ghostbtn { border: 1px solid var(--line); background: transparent; border-radius: 8px; padding: 7px 12px; font-size: 13px; color: var(--muted); }
+.ghostbtn:hover { color: var(--ink); background: var(--surface); }
+.ghostbtn.armed { border-color: var(--bad); color: var(--bad); }
+.sample-note { font-size: 12px; color: var(--muted); background: var(--surface-2); border-radius: 999px; padding: 4px 10px; }
+
+/* Goals strip */
+.goals { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; display: grid; gap: 12px; }
+.goals-head { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+.goals-head h2 { margin: 0; font: 700 20px/1 var(--font-display); text-transform: uppercase; letter-spacing: .04em; }
+.goals-head .stat { color: var(--muted); font-size: 13px; }
+.goals-head .stat b { color: var(--ink); font-weight: 600; }
+.goals-head .spacer { flex: 1; }
+.window { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.window select { background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; font-size: 13px; }
+.btn { border: 0; border-radius: 8px; padding: 9px 16px; font-weight: 600; background: var(--accent); color: var(--accent-ink); }
+.btn:hover { filter: brightness(1.06); }
+.btn.sm { padding: 6px 12px; font-size: 13px; }
+.btn.quiet { background: var(--surface-2); color: var(--ink); }
+.goal-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.goal { --tc: var(--commit); display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; align-items: center; padding: 10px 12px; border-radius: 8px; background: var(--surface-2); }
+.goal .g-name { font-weight: 600; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.goal .g-count { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.goal .g-count b { color: var(--ink); font-size: 14px; }
+.goal .bar { grid-column: 1 / -1; display: flex; gap: 3px; height: 8px; }
+.goal .bar i { flex: 1; border-radius: 2px; background: color-mix(in srgb, var(--tc) 16%, var(--surface)); }
+.goal .bar i.on { background: var(--tc); }
+.goal .bar i.prop { background: repeating-linear-gradient(135deg, var(--tc) 0 3px, color-mix(in srgb, var(--tc) 30%, var(--surface)) 3px 6px); }
+.goal .bar.zero i { background: transparent; border: 1px dashed var(--line); }
+.stepper { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+.stepper button { border: 0; background: transparent; width: 26px; height: 24px; font-size: 15px; line-height: 1; color: var(--muted); }
+.stepper button:hover { color: var(--ink); }
+.stepper span { min-width: 34px; text-align: center; font-size: 12px; }
+.dot { width: 10px; height: 10px; border-radius: 3px; background: var(--tc); flex: none; display: inline-block; }
+.proposal { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 12px; border-radius: 8px; border: 1px dashed var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); font-size: 14px; }
+.proposal b { font-weight: 700; }
+.proposal .spacer { flex: 1; }
+
+.t-lift { --tc: var(--t-lift); } .t-swim { --tc: var(--t-swim); } .t-climb { --tc: var(--t-climb); }
+.t-court { --tc: var(--t-court); } .t-yoga { --tc: var(--t-yoga); } .t-commit { --tc: var(--commit); }
+
+/* Main layout */
+.layout { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 1040px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); min-width: 0; }
+.panel-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; padding: 14px 16px 10px; }
+.panel-head h2 { margin: 0; font: 700 20px/1 var(--font-display); text-transform: uppercase; letter-spacing: .04em; }
+.panel-head p { margin: 0; color: var(--muted); font-size: 13px; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 0 16px 10px; font-size: 12px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend .hatch { width: 10px; height: 10px; border-radius: 3px; background: repeating-linear-gradient(135deg, var(--commit) 0 2px, transparent 2px 4px); border: 1px solid var(--commit); }
+
+/* Planner grid */
+.grid-scroll { overflow-x: auto; border-top: 1px solid var(--line); }
+.grid { display: grid; grid-template-columns: 48px repeat(7, minmax(96px, 1fr)); min-width: 720px; }
+.dhead { position: sticky; top: 0; padding: 8px 6px; text-align: center; border-left: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--surface); z-index: 2; }
+.dhead b { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+.dhead span { font: 700 22px/1 var(--font-display); }
+.dhead.today span { color: var(--accent); }
+.dhead.today b { color: var(--accent); }
+.gutter { position: relative; height: calc(var(--hour) * 17); }
+.gutter span { position: absolute; right: 6px; transform: translateY(-50%); font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+.col { position: relative; height: calc(var(--hour) * 17); border-left: 1px solid var(--line);
+  background-image: linear-gradient(var(--line) 1px, transparent 1px); background-size: 100% var(--hour); }
+.col.today { background-color: color-mix(in srgb, var(--accent) 5%, transparent); }
+.col .past { position: absolute; left: 0; right: 0; top: 0; background: color-mix(in srgb, var(--surface-2) 55%, transparent); pointer-events: none; }
+.nowline { position: absolute; left: -1px; right: 0; height: 2px; background: var(--bad); z-index: 3; pointer-events: none; }
+.nowline::before { content: ""; position: absolute; left: -4px; top: -3px; width: 8px; height: 8px; border-radius: 50%; background: var(--bad); }
+.blk { position: absolute; left: 3px; right: 3px; border: 0; border-radius: 6px; padding: 3px 6px; text-align: left; overflow: hidden;
+  background: color-mix(in srgb, var(--tc) 20%, var(--surface)); color: var(--ink); font-size: 11.5px; line-height: 1.25; z-index: 1;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tc) 45%, transparent); }
+.blk:hover { background: color-mix(in srgb, var(--tc) 30%, var(--surface)); }
+.blk b { display: block; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.blk small { display: block; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 10.5px; }
+.blk.commit { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--commit) 14%, var(--surface)) 0 6px, color-mix(in srgb, var(--commit) 7%, var(--surface)) 6px 12px); }
+.blk.commit:hover { background: color-mix(in srgb, var(--commit) 22%, var(--surface)); }
+.blk.proposed { background: color-mix(in srgb, var(--tc) 8%, var(--surface)); box-shadow: inset 0 0 0 1.5px var(--tc); outline: 1px dashed var(--tc); outline-offset: -4px; }
+.blk.sel { box-shadow: inset 0 0 0 2px var(--ink); }
+.blk .travel { position: absolute; left: 0; right: 0; }
+.ghost { position: absolute; left: 3px; right: 3px; border-radius: 6px; border: 2px dashed var(--tc); background: color-mix(in srgb, var(--tc) 12%, transparent); z-index: 4; pointer-events: none; padding: 3px 6px; font-size: 11px; font-weight: 600; }
+.ghost.bad { --tc: var(--bad); }
+.ghost .walk { position: absolute; left: -2px; right: -2px; border-left: 2px dotted var(--tc); border-right: 2px dotted var(--tc); opacity: .7; }
+
+.detail { border-top: 1px solid var(--line); padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; font-size: 14px; min-height: 52px; }
+.detail .muted { color: var(--muted); }
+.detail .spacer { flex: 1; }
+.detail h3 { margin: 0; font-size: 15px; display: flex; gap: 8px; align-items: center; }
+
+details.add { border-top: 1px solid var(--line); }
+details.add summary { padding: 12px 16px; cursor: pointer; font-weight: 600; font-size: 14px; list-style: none; display: flex; align-items: center; gap: 8px; }
+details.add summary::-webkit-details-marker { display: none; }
+details.add summary::before { content: "+"; display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 5px; background: var(--surface-2); font-weight: 700; }
+details.add[open] summary::before { content: "−"; }
+.form { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 12px; padding: 0 16px 16px; align-items: end; }
+.form label { display: grid; gap: 4px; font-size: 12px; color: var(--muted); font-weight: 500; }
+.form input[type=text], .form input[type=time], .form select { background: var(--bg); border: 1px solid var(--line); border-radius: 7px; padding: 7px 9px; font-size: 14px; width: 100%; min-width: 0; }
+.form .days { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; }
+.form .days label { display: inline-flex; align-items: center; gap: 0; }
+.form .days input { position: absolute; opacity: 0; pointer-events: none; }
+.form .days span { padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); font-size: 13px; color: var(--ink); cursor: pointer; }
+.form .days input:checked + span { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.form .days input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.form .err { grid-column: 1 / -1; color: var(--bad); font-size: 13px; min-height: 1em; margin: 0; }
+
+/* Finder */
+.board { display: grid; gap: 6px; padding: 0 12px 12px; }
+.center { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); text-align: left; width: 100%; }
+.center:hover { border-color: var(--muted); }
+.center.on { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.center .c-name { font-weight: 600; font-size: 14px; min-width: 0; }
+.center .c-walk { font-family: var(--font-mono); font-size: 11px; color: var(--muted); text-align: right; }
+.center .c-next { grid-column: 1 / -1; font-size: 12.5px; color: var(--muted); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.center .c-next b { color: var(--ink); font-weight: 600; }
+.center .c-types { display: flex; gap: 3px; }
+.center .c-types .dot { width: 8px; height: 8px; border-radius: 2px; }
+
+.filters { display: grid; gap: 8px; padding: 12px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--surface-2) 50%, var(--surface)); }
+.chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 1px; }
+.chips::-webkit-scrollbar { display: none; }
+.chip { --tc: var(--ink); flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 11px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
+.chip:hover { border-color: var(--muted); }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chip.day { flex-direction: column; gap: 0; padding: 4px 10px; border-radius: 8px; line-height: 1.15; }
+.chip.day small { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; opacity: .75; }
+.chip.day b { font-family: var(--font-display); font-size: 17px; }
+.chip.day.all b { font-family: var(--font-body); font-size: 13px; padding-block: 5px; }
+.frow { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; font-size: 13px; }
+.frow select { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; font-size: 13px; max-width: 100%; }
+.frow label { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+.frow .count { margin-left: auto; color: var(--muted); }
+
+.slots { list-style: none; margin: 0; padding: 0; max-height: 760px; overflow-y: auto; }
+.slots .dayhdr { position: sticky; top: 0; z-index: 1; background: var(--surface); padding: 8px 14px 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line); }
+.slot { --tc: var(--commit); display: grid; grid-template-columns: 68px minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.slot:hover { background: color-mix(in srgb, var(--surface-2) 55%, var(--surface)); }
+.slot.dim { opacity: .55; }
+.s-time b { display: block; font-weight: 700; font-size: 14px; white-space: nowrap; }
+.s-time span { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+.s-main { min-width: 0; }
+.s-name { font-weight: 600; display: flex; align-items: center; gap: 7px; font-size: 14px; }
+.s-sub { font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.s-cap { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
+.meter { width: 84px; height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; flex: none; }
+.meter span { display: block; height: 100%; background: var(--ok); border-radius: 3px; }
+.meter.warn span { background: var(--warn); }
+.meter.bad span { background: var(--bad); }
+.s-cap .num { color: var(--muted); }
+.s-act { display: grid; justify-items: end; gap: 4px; }
+.pill { font-size: 11.5px; padding: 3px 8px; border-radius: 999px; white-space: nowrap; font-weight: 600; }
+.pill.ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); }
+.pill.bad { color: var(--bad); background: color-mix(in srgb, var(--bad) 12%, transparent); max-width: 170px; overflow: hidden; text-overflow: ellipsis; }
+.pill.muted { color: var(--muted); background: var(--surface-2); }
+.pill.mine { color: var(--accent-ink); background: var(--accent); }
+.pill.prop { color: var(--accent); border: 1px dashed var(--accent); }
+.linkbtn { border: 0; background: none; padding: 0; font-size: 12px; color: var(--muted); text-decoration: underline; text-underline-offset: 2px; }
+.linkbtn:hover { color: var(--ink); }
+.more { display: block; width: calc(100% - 28px); margin: 12px 14px; }
+.empty { padding: 28px 16px; text-align: center; color: var(--muted); font-size: 14px; }
+.empty b { display: block; color: var(--ink); margin-bottom: 4px; }
+@media (max-width: 520px) {
+  .slot { grid-template-columns: 58px minmax(0, 1fr); }
+  .s-act { grid-column: 2; justify-items: start; grid-auto-flow: column; align-items: center; justify-content: start; gap: 10px; }
+}
+
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%) translateY(20px); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 14px; opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; z-index: 20; max-width: calc(100% - 32px); }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+@media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Slot<span>wise</span></h1>
+      <p>Your activities and every rec center's open slots, on one screen.</p>
+    </div>
+    <span class="sample-note">Sample data · saved in this browser</span>
+    <div class="weeknav" role="group" aria-label="Week">
+      <button id="prevWeek" type="button" aria-label="Previous week">‹</button>
+      <div class="wk" id="weekLabel"></div>
+      <button id="nextWeek" type="button" aria-label="Next week">›</button>
+    </div>
+    <button class="ghostbtn" id="resetBtn" type="button">Reset sample data</button>
+  </header>
+
+  <section class="goals" aria-labelledby="goalsTitle">
+    <div class="goals-head">
+      <h2 id="goalsTitle">Weekly goals</h2>
+      <span class="stat" id="weekStat"></span>
+      <span class="spacer"></span>
+      <label class="window">Book between
+        <select id="prefFrom" aria-label="Earliest start"></select>
+        and
+        <select id="prefTo" aria-label="Latest end"></select>
+      </label>
+      <button class="btn" id="planBtn" type="button">Plan my week</button>
+    </div>
+    <div class="goal-list" id="goalList"></div>
+    <div class="proposal" id="proposal" hidden></div>
+  </section>
+
+  <main class="layout">
+    <section class="panel" aria-labelledby="plannerTitle">
+      <div class="panel-head">
+        <h2 id="plannerTitle">Planner</h2>
+        <p>Hover a slot on the right to preview it here. Dotted edges show walking time.</p>
+      </div>
+      <div class="legend" id="legend"></div>
+      <div class="grid-scroll"><div class="grid" id="grid"></div></div>
+      <div class="detail" id="detail"></div>
+      <details class="add" id="addBox">
+        <summary>Add an extracurricular</summary>
+        <form class="form" id="addForm" novalidate>
+          <label>Activity<input type="text" id="fName" placeholder="e.g. Debate team" maxlength="40"></label>
+          <label>Type
+            <select id="fCat">
+              <option value="club">Club</option>
+              <option value="class">Class</option>
+              <option value="work">Work</option>
+              <option value="volunteer">Volunteering</option>
+              <option value="sport">Team sport</option>
+            </select>
+          </label>
+          <label>Starts<input type="time" id="fStart" value="17:00" step="300"></label>
+          <label>Ends<input type="time" id="fEnd" value="18:30" step="300"></label>
+          <div class="days" id="fDays"></div>
+          <p class="err" id="fErr" aria-live="polite"></p>
+          <button class="btn" type="submit" id="fSubmit">Add to every week</button>
+        </form>
+      </details>
+    </section>
+
+    <aside class="panel" aria-labelledby="finderTitle">
+      <div class="panel-head">
+        <h2 id="finderTitle">Open slots</h2>
+        <p>5 rec centers, checked against your schedule.</p>
+      </div>
+      <div class="board" id="board"></div>
+      <div class="filters">
+        <div class="chips" id="typeChips" role="group" aria-label="Activity"></div>
+        <div class="chips" id="dayChips" role="group" aria-label="Day"></div>
+        <div class="frow">
+          <label><input type="checkbox" id="fitsOnly" checked> Only times that fit</label>
+          <label>Sort
+            <select id="sortSel">
+              <option value="soon">Soonest</option>
+              <option value="open">Most space</option>
+              <option value="near">Shortest walk</option>
+            </select>
+          </label>
+          <span class="count num" id="slotCount"></span>
+        </div>
+      </div>
+      <ul class="slots" id="slotList"></ul>
+    </aside>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- helpers ---------- */
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const t = (h, m = 0) => h * 60 + m;
+  const hourly = (a, b) => { const r = []; for (let h = a; h < b; h++) r.push(h * 60); return r; };
+  const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const DAY_FULL = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  const GRID_START = t(6), GRID_END = t(23);
+
+  function mondayOf(d) { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
+  function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
+  function iso(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  function fmt(m) { let h = Math.floor(m / 60); const mm = m % 60; const ap = h >= 12 && h < 24 ? "pm" : "am"; h = h % 12 || 12; return h + (mm ? ":" + String(mm).padStart(2, "0") : "") + " " + ap; }
+  function fmtShort(m) { let h = Math.floor(m / 60); const mm = m % 60; h = h % 12 || 12; return h + (mm ? ":" + String(mm).padStart(2, "0") : ""); }
+  function fmtRange(a, b) { const same = (a < 720) === (b < 720); return (same ? fmtShort(a) : fmt(a)) + "–" + fmt(b); }
+  function hash(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function rand(s) { let x = hash(s) + 0x6D2B79F5; x = Math.imul(x ^ (x >>> 15), x | 1); x ^= x + Math.imul(x ^ (x >>> 7), x | 61); return ((x ^ (x >>> 14)) >>> 0) / 4294967296; }
+  const uid = () => Math.random().toString(36).slice(2, 9);
+  const toMin = (v) => { const [h, m] = v.split(":").map(Number); return h * 60 + m; };
+
+  /* ---------- sample world ---------- */
+  const TYPES = {
+    lift:  { label: "Weight room", short: "Lift",    unit: "spots" },
+    swim:  { label: "Lap swim",    short: "Swim",    unit: "lanes" },
+    climb: { label: "Bouldering",  short: "Climb",   unit: "spots" },
+    court: { label: "Court time",  short: "Courts",  unit: "courts" },
+    yoga:  { label: "Group class", short: "Classes", unit: "spots" },
+  };
+  const CATS = { class: "Class", club: "Club", work: "Work", volunteer: "Volunteering", sport: "Team sport" };
+
+  const CENTERS = [
+    { id: "arc", name: "Anderson Rec Center", walk: 6, offer: [
+      { type: "lift",  name: "Weight room",        cap: 45, len: 60, week: hourly(6, 22), wkend: hourly(8, 20) },
+      { type: "court", name: "Basketball court",   cap: 4,  len: 60, week: hourly(7, 22), wkend: hourly(9, 20) },
+      { type: "yoga",  name: "Vinyasa flow",       cap: 24, len: 60, days: [0, 2, 4], week: [t(7)] },
+      { type: "yoga",  name: "Spin",               cap: 20, len: 45, days: [1, 3], week: [t(17, 30)] },
+      { type: "yoga",  name: "Pilates mat",        cap: 22, len: 60, days: [5], wkend: [t(10)] },
+    ]},
+    { id: "riv", name: "Riverside Aquatics", walk: 14, offer: [
+      { type: "swim", name: "Lap swim", cap: 8, len: 45, week: [t(6), t(7), t(12), t(13), t(16, 30), t(17, 30), t(18, 30), t(19, 30)], wkend: hourly(8, 14) },
+      { type: "yoga", name: "Aqua fit",  cap: 16, len: 45, days: [1, 3], week: [t(12)] },
+    ]},
+    { id: "nor", name: "North Campus Fitness", walk: 11, offer: [
+      { type: "lift", name: "Weight room",       cap: 30, len: 60, week: hourly(6, 23), wkend: hourly(9, 21) },
+      { type: "yoga", name: "Sunrise yoga",      cap: 18, len: 60, days: [1, 3], week: [t(7)] },
+      { type: "yoga", name: "HIIT circuit",      cap: 20, len: 45, days: [0, 2], week: [t(18, 30)] },
+      { type: "yoga", name: "Restorative yoga",  cap: 18, len: 60, days: [6], wkend: [t(17)] },
+    ]},
+    { id: "sum", name: "Summit Bouldering", walk: 18, offer: [
+      { type: "climb", name: "Open bouldering",   cap: 24, len: 90, week: [t(7), t(12), t(15), t(16, 30), t(18), t(19, 30)], wkend: [t(10), t(11, 30), t(13), t(14, 30), t(16)] },
+      { type: "climb", name: "Intro belay class", cap: 8,  len: 90, days: [2, 5], week: [t(19)], wkend: [t(12)] },
+    ]},
+    { id: "eas", name: "Eastgate Courts & Pool", walk: 9, offer: [
+      { type: "court", name: "Pickleball court", cap: 6, len: 60, week: hourly(7, 21), wkend: hourly(8, 18) },
+      { type: "swim",  name: "Lap swim",         cap: 6, len: 45, week: [t(6, 30), t(12), t(17), t(18), t(19)], wkend: [t(9), t(10), t(11)] },
+    ]},
+  ];
+  const CENTER = Object.fromEntries(CENTERS.map((c) => [c.id, c]));
+
+  const DEFAULT_COMMITMENTS = [
+    { name: "CS 124 lecture",       cat: "class",     days: [0, 2, 4], start: t(11, 30), end: t(12, 20) },
+    { name: "ECON 1 section",       cat: "class",     days: [1, 3],    start: t(9, 30),  end: t(10, 50) },
+    { name: "Chem lab",             cat: "class",     days: [1],       start: t(13, 30), end: t(16, 20) },
+    { name: "Robotics build night", cat: "club",      days: [1, 3],    start: t(18),     end: t(20) },
+    { name: "Orchestra rehearsal",  cat: "club",      days: [2],       start: t(19),     end: t(21, 30) },
+    { name: "Math tutoring",        cat: "volunteer", days: [0],       start: t(16),     end: t(17, 30) },
+    { name: "Library desk shift",   cat: "work",      days: [5],       start: t(10),     end: t(14) },
+    { name: "Intramural soccer",    cat: "sport",     days: [6],       start: t(15),     end: t(16, 30) },
+  ];
+
+  /* ---------- slot generation (deterministic per date) ---------- */
+  const slotCache = {};
+  const weekStart = (off) => addDays(mondayOf(new Date()), 7 * off);
+  function slotsForWeek(off) {
+    if (slotCache[off]) return slotCache[off];
+    const ws = weekStart(off), out = [];
+    for (let d = 0; d < 7; d++) {
+      const date = iso(addDays(ws, d)), wkend = d >= 5;
+      for (const c of CENTERS) {
+        c.offer.forEach((o, oi) => {
+          if (o.days && !o.days.includes(d)) return;
+          for (const st of (wkend ? o.wkend : o.week) || []) {
+            const id = `${c.id}-${oi}-${date}-${st}`;
+            const h = st / 60;
+            const base = wkend ? (h >= 10 && h < 14 ? 0.72 : 0.5)
+              : h < 8 ? 0.38 : h < 11 ? 0.5 : h < 14 ? 0.68 : h < 16 ? 0.45 : h < 20 ? 0.9 : 0.42;
+            let f = base + (rand(id) - 0.5) * 0.55;
+            if (rand(id + "full") < 0.07) f = 1;
+            f = Math.max(0.05, Math.min(1, f));
+            out.push({ id, center: c.id, type: o.type, name: o.name, date, day: d, start: st, end: st + o.len, cap: o.cap, taken: Math.round(o.cap * f) });
+          }
+        });
+      }
+    }
+    out.sort((a, b) => a.day - b.day || a.start - b.start || CENTER[a.center].walk - CENTER[b.center].walk);
+    return (slotCache[off] = out);
+  }
+
+  /* ---------- state ---------- */
+  const KEY = "slotwise-v1";
+  let state;
+  const ui = { week: 0, type: "all", day: null, center: "all", fitsOnly: true, sort: "soon", limit: 40, sel: null, resetArmed: false };
+
+  function defaults() {
+    return {
+      commitments: DEFAULT_COMMITMENTS.map((c) => ({ id: uid(), ...c })),
+      goals: { lift: 3, swim: 1, climb: 1, yoga: 1, court: 0 },
+      prefs: { from: t(7), to: t(21) },
+      bookings: null,
+    };
+  }
+  function load() { try { const s = JSON.parse(localStorage.getItem(KEY)); return s && s.commitments ? s : null; } catch (e) { return null; } }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* storage unavailable */ } }
+
+  /* ---------- queries ---------- */
+  const now = () => new Date();
+  const nowMin = () => { const n = now(); return n.getHours() * 60 + n.getMinutes(); };
+  const todayIso = () => iso(now());
+  function isPast(s) { const td = todayIso(); return s.date < td || (s.date === td && s.start < nowMin()); }
+  const weekDates = (off) => Array.from({ length: 7 }, (_, i) => iso(addDays(weekStart(off), i)));
+  function weekBookings(off = ui.week) { const ds = new Set(weekDates(off)); return state.bookings.filter((b) => ds.has(b.date)); }
+  const bookingFor = (s) => state.bookings.find((b) => b.slotId === s.id);
+  const spotsLeft = (s) => s.cap - s.taken - (bookingFor(s) ? 1 : 0);
+
+  function conflictFor(s) {
+    const walk = CENTER[s.center].walk, a = s.start - walk, b = s.end + walk;
+    for (const c of state.commitments) if (c.days.includes(s.day) && a < c.end && b > c.start) return c.name;
+    for (const bk of state.bookings) {
+      if (bk.date !== s.date || bk.slotId === s.id) continue;
+      const w2 = CENTER[bk.center].walk;
+      if (a < bk.end + w2 && b > bk.start - w2) return TYPES[bk.type].short + " at " + CENTER[bk.center].name.split(" ")[0];
+    }
+    return null;
+  }
+  function status(s) {
+    const b = bookingFor(s);
+    if (b) return { k: b.status === "proposed" ? "proposed" : "mine", b };
+    if (isPast(s)) return { k: "past" };
+    if (s.cap - s.taken <= 0) return { k: "full" };
+    const c = conflictFor(s);
+    if (c) return { k: "conflict", why: c };
+    return { k: "ok" };
+  }
+
+  function addBooking(s, st = "booked") {
+    state.bookings.push({ id: uid(), slotId: s.id, center: s.center, type: s.type, name: s.name, date: s.date, day: s.day, start: s.start, end: s.end, status: st });
+  }
+  function removeBooking(id) { state.bookings = state.bookings.filter((b) => b.id !== id); if (ui.sel && ui.sel.id === id) ui.sel = null; }
+
+  function seedBookings() {
+    state.bookings = [];
+    const slots = slotsForWeek(0);
+    const pick = (pred) => slots.find((s) => pred(s) && status(s).k === "ok");
+    const a = pick((s) => s.type === "lift" && s.center === "arc" && s.start === t(17)) || pick((s) => s.type === "lift");
+    if (a) addBooking(a);
+    const b = pick((s) => s.type === "swim" && s.start <= t(7, 30) && s.day !== (a && a.day)) || pick((s) => s.type === "swim");
+    if (b) addBooking(b);
+  }
+
+  /* ---------- planning ---------- */
+  function planWeek() {
+    const slots = slotsForWeek(ui.week);
+    let added = 0, short = [];
+    for (const type of ["climb", "swim", "yoga", "court", "lift"]) {
+      let need = (state.goals[type] || 0) - weekBookings().filter((b) => b.type === type).length;
+      while (need > 0) {
+        let best = null, bestScore = -Infinity;
+        const wb = weekBookings();
+        const sameDays = wb.filter((b) => b.type === type).map((b) => b.day);
+        for (const s of slots) {
+          if (s.type !== type || s.start < state.prefs.from || s.end > state.prefs.to) continue;
+          if (status(s).k !== "ok") continue;
+          if (sameDays.includes(s.day)) continue;
+          const sameDay = wb.filter((b) => b.date === s.date).length;
+          let score = (spotsLeft(s) / s.cap) * 3 - CENTER[s.center].walk / 8 - sameDay * 1.6;
+          if (sameDays.length) score += Math.min(...sameDays.map((d) => Math.abs(d - s.day))) * 0.45;
+          score -= s.day * 0.02;
+          if (score > bestScore) { bestScore = score; best = s; }
+        }
+        if (!best) { short.push(TYPES[type].short.toLowerCase()); break; }
+        addBooking(best, "proposed"); added++; need--;
+      }
+    }
+    if (added) toast(`Proposed ${added} session${added > 1 ? "s" : ""}. Keep them or discard below.`);
+    else if (short.length) toast(`No open slots fit your schedule for ${short.join(", ")}. Try widening your booking window.`);
+    else toast("Your weekly goals are already covered.");
+    render();
+  }
+
+  /* ---------- rendering ---------- */
+  function renderHeader() {
+    const ws = weekStart(ui.week), we = addDays(ws, 6);
+    const md = (d) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    $("#weekLabel").innerHTML = `${["This week", "Next week", "In 2 weeks"][ui.week]}<small>${md(ws)} – ${md(we)}</small>`;
+    $("#prevWeek").disabled = ui.week === 0;
+    $("#nextWeek").disabled = ui.week === 2;
+    const wb = weekBookings().filter((b) => b.status === "booked");
+    const mins = wb.reduce((a, b) => a + b.end - b.start, 0);
+    const commitMins = state.commitments.reduce((a, c) => a + (c.end - c.start) * c.days.length, 0);
+    $("#weekStat").innerHTML = `<b>${wb.length}</b> sessions booked · <b>${(mins / 60).toFixed(1)} h</b> active · <b>${(commitMins / 60).toFixed(1)} h</b> of other commitments`;
+  }
+
+  function renderPrefs() {
+    const opts = (sel, from, to, val) => {
+      let h = ""; for (let m = from; m <= to; m += 30) h += `<option value="${m}"${m === val ? " selected" : ""}>${fmt(m)}</option>`;
+      sel.innerHTML = h;
+    };
+    opts($("#prefFrom"), t(5), t(12), state.prefs.from);
+    opts($("#prefTo"), t(15), t(23), state.prefs.to);
+  }
+
+  function renderGoals() {
+    const wb = weekBookings();
+    $("#goalList").innerHTML = Object.keys(TYPES).map((k) => {
+      const target = state.goals[k] || 0;
+      const booked = wb.filter((b) => b.type === k && b.status === "booked").length;
+      const prop = wb.filter((b) => b.type === k && b.status === "proposed").length;
+      const n = Math.max(target, booked + prop);
+      let bar = "";
+      for (let i = 0; i < n; i++) bar += `<i class="${i < booked ? "on" : i < booked + prop ? "prop" : ""}"></i>`;
+      if (!n) bar = "<i></i>";
+      return `<div class="goal t-${k}">
+        <div class="g-name"><span class="dot"></span>${TYPES[k].short}</div>
+        <div class="stepper" aria-label="${TYPES[k].short} sessions per week">
+          <button type="button" data-goal="${k}" data-d="-1" aria-label="Fewer ${TYPES[k].short} sessions">−</button>
+          <span class="num">${target}/wk</span>
+          <button type="button" data-goal="${k}" data-d="1" aria-label="More ${TYPES[k].short} sessions">+</button>
+        </div>
+        <div class="bar${n ? "" : " zero"}">${bar}</div>
+        <div class="g-count" style="grid-column:1/-1"><b>${booked}</b> booked${prop ? ` · ${prop} proposed` : ""}${target ? ` · goal ${target}` : " · no goal set"}</div>
+      </div>`;
+    }).join("");
+    const props = wb.filter((b) => b.status === "proposed");
+    const box = $("#proposal");
+    box.hidden = !props.length;
+    if (props.length) {
+      box.innerHTML = `<span><b>${props.length} proposed</b> ${props.length > 1 ? "sessions fit" : "session fits"} around your schedule, shown dashed in the planner.</span>
+        <span class="spacer"></span>
+        <button class="btn sm" type="button" id="keepAll">Book all ${props.length}</button>
+        <button class="btn sm quiet" type="button" id="discardAll">Discard</button>`;
+    }
+  }
+
+  function renderLegend() {
+    $("#legend").innerHTML = Object.keys(TYPES).map((k) => `<span class="t-${k}"><i class="dot"></i>${TYPES[k].short}</span>`).join("") +
+      `<span><i class="hatch"></i>Classes, clubs & work</span>`;
+  }
+
+  const px = (m) => ((m - GRID_START) / 60) * 44;
+  function renderGrid() {
+    const ws = weekStart(ui.week), td = todayIso(), nm = nowMin();
+    let h = `<div class="dhead" style="border-left:0"></div>`;
+    for (let d = 0; d < 7; d++) {
+      const date = addDays(ws, d);
+      h += `<div class="dhead${iso(date) === td ? " today" : ""}"><b>${DAYS[d]}</b><span>${date.getDate()}</span></div>`;
+    }
+    h += `<div class="gutter">`;
+    for (let m = GRID_START + 60; m < GRID_END; m += 60) h += `<span style="top:${px(m)}px">${fmtShort(m)}${m < 720 ? "a" : "p"}</span>`;
+    h += `</div>`;
+    const wb = weekBookings();
+    for (let d = 0; d < 7; d++) {
+      const date = iso(addDays(ws, d));
+      const isToday = date === td;
+      h += `<div class="col${isToday ? " today" : ""}" data-day="${d}">`;
+      if (date < td) h += `<div class="past" style="height:100%"></div>`;
+      else if (isToday && nm > GRID_START) h += `<div class="past" style="height:${Math.min(px(nm), px(GRID_END))}px"></div>`;
+      for (const c of state.commitments) {
+        if (!c.days.includes(d)) continue;
+        const sel = ui.sel && ui.sel.kind === "c" && ui.sel.id === c.id;
+        h += blockHtml(`blk commit t-commit${sel ? " sel" : ""}`, c.start, c.end, esc(c.name), `${fmtRange(c.start, c.end)} · ${CATS[c.cat]}`, `data-c="${c.id}"`);
+      }
+      for (const b of wb.filter((x) => x.day === d)) {
+        const sel = ui.sel && ui.sel.kind === "b" && ui.sel.id === b.id;
+        h += blockHtml(`blk t-${b.type}${b.status === "proposed" ? " proposed" : ""}${sel ? " sel" : ""}`, b.start, b.end,
+          esc(b.name), `${fmtRange(b.start, b.end)} · ${CENTER[b.center].name}`, `data-b="${b.id}"`);
+      }
+      if (isToday && nm > GRID_START && nm < GRID_END) h += `<div class="nowline" style="top:${px(nm)}px"></div>`;
+      h += `</div>`;
+    }
+    $("#grid").innerHTML = h;
+  }
+  function blockHtml(cls, s, e, title, sub, attr) {
+    const top = px(Math.max(s, GRID_START)), height = Math.max(px(Math.min(e, GRID_END)) - top - 2, 16);
+    return `<button type="button" class="${cls}" style="top:${top + 1}px;height:${height}px" ${attr} title="${title.replace(/"/g, "&quot;")} · ${sub}"><b>${title}</b>${height > 30 ? `<small>${sub}</small>` : ""}</button>`;
+  }
+
+  function drawGhost(s) {
+    document.querySelectorAll(".ghost").forEach((g) => g.remove());
+    if (!s || s.date < weekDates(ui.week)[0] || s.date > weekDates(ui.week)[6]) return;
+    const col = document.querySelector(`.col[data-day="${s.day}"]`);
+    if (!col) return;
+    const st = status(s);
+    const walk = CENTER[s.center].walk;
+    const g = document.createElement("div");
+    g.className = `ghost t-${s.type}${st.k === "conflict" || st.k === "full" ? " bad" : ""}`;
+    g.style.top = px(s.start) + "px";
+    g.style.height = Math.max(px(s.end) - px(s.start), 16) + "px";
+    g.innerHTML = `<div class="walk" style="top:${-px(GRID_START + walk)}px;bottom:${-px(GRID_START + walk)}px"></div>${esc(s.name)}`;
+    col.appendChild(g);
+    const scroller = col.closest(".grid-scroll");
+    if (scroller && scroller.scrollWidth > scroller.clientWidth) {
+      const left = col.offsetLeft - 48;
+      if (left < scroller.scrollLeft || left + col.offsetWidth > scroller.scrollLeft + scroller.clientWidth) scroller.scrollTo({ left: Math.max(0, left - 40), behavior: "smooth" });
+    }
+  }
+
+  function renderDetail() {
+    const el = $("#detail");
+    const sel = ui.sel;
+    if (sel && sel.kind === "b") {
+      const b = state.bookings.find((x) => x.id === sel.id);
+      if (b) {
+        const c = CENTER[b.center];
+        el.innerHTML = `<h3 class="t-${b.type}"><span class="dot"></span>${esc(b.name)}${b.status === "proposed" ? ' <span class="pill prop">Proposed</span>' : ""}</h3>
+          <span>${DAY_FULL[b.day]} · ${fmtRange(b.start, b.end)}</span>
+          <span class="muted">${c.name} · ${c.walk} min walk each way</span>
+          <span class="spacer"></span>
+          ${b.status === "proposed" ? `<button class="btn sm" type="button" data-keep="${b.id}">Book it</button>` : ""}
+          <button class="btn sm quiet" type="button" data-remove="${b.id}">${b.status === "proposed" ? "Discard" : "Cancel booking"}</button>`;
+        return;
+      }
+    }
+    if (sel && sel.kind === "c") {
+      const c = state.commitments.find((x) => x.id === sel.id);
+      if (c) {
+        el.innerHTML = `<h3><span class="dot t-commit"></span>${esc(c.name)}</h3>
+          <span>${c.days.map((d) => DAYS[d]).join(", ")} · ${fmtRange(c.start, c.end)}</span>
+          <span class="muted">${CATS[c.cat]} · repeats weekly</span>
+          <span class="spacer"></span>
+          <button class="btn sm quiet" type="button" data-delc="${c.id}">Remove from schedule</button>`;
+        return;
+      }
+    }
+    ui.sel = null;
+    el.innerHTML = `<span class="muted">Select anything in the planner to see details, book a proposal, or cancel.</span>`;
+  }
+
+  function renderBoard() {
+    const slots = slotsForWeek(ui.week);
+    $("#board").innerHTML = CENTERS.map((c) => {
+      const types = [...new Set(c.offer.map((o) => o.type))];
+      const mine = slots.filter((s) => s.center === c.id && (ui.type === "all" || s.type === ui.type));
+      const open = mine.filter((s) => status(s).k === "ok");
+      const next = open[0];
+      const nextTxt = !types.includes(ui.type) && ui.type !== "all"
+        ? `No ${TYPES[ui.type].label.toLowerCase()} here`
+        : next
+          ? `Next fit: <b>${esc(next.name)}</b> ${DAYS[next.day]} ${fmt(next.start)} · <span class="num">${spotsLeft(next)} ${TYPES[next.type].unit} open</span>`
+          : "No open times that fit this week";
+      return `<button type="button" class="center${ui.center === c.id ? " on" : ""}" data-center="${c.id}" aria-pressed="${ui.center === c.id}">
+        <span class="c-name">${c.name}</span>
+        <span class="c-walk">${c.walk} min walk</span>
+        <span class="c-next"><span class="c-types">${types.map((k) => `<i class="dot t-${k}" title="${TYPES[k].label}"></i>`).join("")}</span>${nextTxt}${open.length ? ` · ${open.length} slots fit` : ""}</span>
+      </button>`;
+    }).join("");
+  }
+
+  function renderFilters() {
+    $("#typeChips").innerHTML = [["all", "All activities"]].concat(Object.keys(TYPES).map((k) => [k, TYPES[k].label]))
+      .map(([k, l]) => `<button type="button" class="chip${k !== "all" ? " t-" + k : ""}" data-type="${k}" aria-pressed="${ui.type === k}">${k !== "all" ? '<i class="dot"></i>' : ""}${l}</button>`).join("");
+    const ws = weekStart(ui.week), td = todayIso();
+    let d = `<button type="button" class="chip day all" data-day="all" aria-pressed="${ui.day === "all"}"><b>All week</b></button>`;
+    for (let i = 0; i < 7; i++) {
+      const date = addDays(ws, i);
+      d += `<button type="button" class="chip day" data-day="${i}" aria-pressed="${ui.day === i}"><small>${iso(date) === td ? "Today" : DAYS[i]}</small><b>${date.getDate()}</b></button>`;
+    }
+    $("#dayChips").innerHTML = d;
+    $("#fitsOnly").checked = ui.fitsOnly;
+    $("#sortSel").value = ui.sort;
+  }
+
+  let visibleSlots = {};
+  function renderSlots() {
+    let list = slotsForWeek(ui.week).filter((s) =>
+      (ui.type === "all" || s.type === ui.type) &&
+      (ui.day === "all" || s.day === ui.day) &&
+      (ui.center === "all" || s.center === ui.center));
+    const withStatus = list.map((s) => ({ s, st: status(s) }));
+    let shown = withStatus.filter(({ st }) => !ui.fitsOnly || ["ok", "mine", "proposed"].includes(st.k));
+    if (!ui.fitsOnly) shown = shown.filter(({ st }) => st.k !== "past" || ui.day !== "all");
+    const cmp = {
+      soon: (a, b) => a.s.day - b.s.day || a.s.start - b.s.start,
+      open: (a, b) => spotsLeft(b.s) / b.s.cap - spotsLeft(a.s) / a.s.cap || a.s.day - b.s.day || a.s.start - b.s.start,
+      near: (a, b) => CENTER[a.s.center].walk - CENTER[b.s.center].walk || a.s.day - b.s.day || a.s.start - b.s.start,
+    }[ui.sort];
+    shown.sort(cmp);
+    const fitCount = withStatus.filter(({ st }) => st.k === "ok").length;
+    $("#slotCount").textContent = `${fitCount} of ${list.length} fit`;
+
+    visibleSlots = {};
+    if (!shown.length) {
+      const allPast = list.length && list.every((s) => isPast(s));
+      $("#slotList").innerHTML = `<li class="empty"><b>${allPast ? "This day has already passed." : "Nothing open fits here."}</b>${allPast ? "Pick a later day or look at next week." : ui.fitsOnly ? "Turn off “Only times that fit” to see full and conflicting slots, or pick another day." : "Try another activity or center."}</li>`;
+      return;
+    }
+    let h = "", lastDay = -1;
+    const groupByDay = ui.day === "all" && ui.sort === "soon";
+    for (const { s, st } of shown.slice(0, ui.limit)) {
+      visibleSlots[s.id] = s;
+      if (groupByDay && s.day !== lastDay) { h += `<li class="dayhdr">${DAY_FULL[s.day]}</li>`; lastDay = s.day; }
+      const left = spotsLeft(s), frac = left / s.cap;
+      const meterCls = frac <= 0 ? "bad" : frac < 0.25 ? "warn" : "";
+      let act;
+      switch (st.k) {
+        case "ok": act = `<span class="pill ok">Fits</span><button class="btn sm" type="button" data-book="${s.id}">Book</button>`; break;
+        case "mine": act = `<span class="pill mine">Booked</span><button class="linkbtn" type="button" data-remove="${st.b.id}">Cancel</button>`; break;
+        case "proposed": act = `<span class="pill prop">Proposed</span><button class="btn sm" type="button" data-keep="${st.b.id}">Book</button>`; break;
+        case "conflict": act = `<span class="pill bad" title="Overlaps ${esc(st.why)} (including walking time)">Clashes: ${esc(st.why)}</span>`; break;
+        case "full": act = `<span class="pill bad">Full</span>`; break;
+        default: act = `<span class="pill muted">Passed</span>`;
+      }
+      const c = CENTER[s.center];
+      h += `<li class="slot t-${s.type}${st.k === "past" || st.k === "full" ? " dim" : ""}" data-slot="${s.id}">
+        <div class="s-time"><b>${fmt(s.start)}</b><span>${s.end - s.start} min${groupByDay ? "" : " · " + DAYS[s.day]}</span></div>
+        <div class="s-main">
+          <div class="s-name"><i class="dot"></i>${esc(s.name)}</div>
+          <div class="s-sub">${c.name} · ${c.walk} min walk</div>
+          <div class="s-cap"><div class="meter ${meterCls}"><span style="width:${Math.max(0, frac) * 100}%"></span></div><span class="num">${Math.max(0, left)}/${s.cap} ${TYPES[s.type].unit} open</span></div>
+        </div>
+        <div class="s-act">${act}</div>
+      </li>`;
+    }
+    if (shown.length > ui.limit) h += `<li><button class="btn quiet more" type="button" id="moreBtn">Show ${Math.min(40, shown.length - ui.limit)} more of ${shown.length - ui.limit}</button></li>`;
+    $("#slotList").innerHTML = h;
+  }
+
+  function render() {
+    renderHeader(); renderGoals(); renderGrid(); renderDetail(); renderBoard(); renderFilters(); renderSlots();
+    save();
+  }
+
+  let toastTimer;
+  function toast(msg) {
+    const el = $("#toast");
+    el.textContent = msg; el.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("show"), 3200);
+  }
+
+  /* ---------- events ---------- */
+  function findSlot(id) { for (const off of [0, 1, 2]) { const s = slotsForWeek(off).find((x) => x.id === id); if (s) return s; } return null; }
+
+  document.addEventListener("click", (e) => {
+    const el = e.target.closest("button");
+    if (!el) return;
+    const d = el.dataset;
+    if (d.book) {
+      const s = findSlot(d.book);
+      if (s && status(s).k === "ok") {
+        addBooking(s); ui.sel = { kind: "b", id: state.bookings[state.bookings.length - 1].id };
+        toast(`Booked ${s.name}, ${DAYS[s.day]} ${fmt(s.start)} at ${CENTER[s.center].name}.`); render();
+      }
+    } else if (d.remove) {
+      const b = state.bookings.find((x) => x.id === d.remove);
+      removeBooking(d.remove);
+      if (b) toast(b.status === "proposed" ? "Proposal discarded." : `Cancelled ${b.name} on ${DAYS[b.day]}.`);
+      render();
+    } else if (d.keep) {
+      const b = state.bookings.find((x) => x.id === d.keep);
+      if (b) { b.status = "booked"; toast(`Booked ${b.name}, ${DAYS[b.day]} ${fmt(b.start)}.`); }
+      render();
+    } else if (d.delc) {
+      const c = state.commitments.find((x) => x.id === d.delc);
+      state.commitments = state.commitments.filter((x) => x.id !== d.delc); ui.sel = null;
+      if (c) toast(`Removed ${c.name} from your weeks.`);
+      render();
+    } else if (d.goal) {
+      state.goals[d.goal] = Math.max(0, Math.min(7, (state.goals[d.goal] || 0) + Number(d.d)));
+      render();
+    } else if (d.b) { ui.sel = { kind: "b", id: d.b }; renderGrid(); renderDetail(); }
+    else if (d.c) { ui.sel = { kind: "c", id: d.c }; renderGrid(); renderDetail(); }
+    else if (d.center) { ui.center = ui.center === d.center ? "all" : d.center; ui.limit = 40; renderBoard(); renderSlots(); }
+    else if (d.type) { ui.type = d.type; ui.limit = 40; renderBoard(); renderFilters(); renderSlots(); }
+    else if (d.day) { ui.day = d.day === "all" ? "all" : Number(d.day); ui.limit = 40; renderFilters(); renderSlots(); }
+    else if (el.id === "moreBtn") { ui.limit += 40; renderSlots(); }
+    else if (el.id === "keepAll") { weekBookings().forEach((b) => { if (b.status === "proposed") b.status = "booked"; }); toast("All proposed sessions booked."); render(); }
+    else if (el.id === "discardAll") { const ids = new Set(weekBookings().filter((b) => b.status === "proposed").map((b) => b.id)); state.bookings = state.bookings.filter((b) => !ids.has(b.id)); toast("Proposals discarded."); render(); }
+    else if (el.id === "planBtn") planWeek();
+    else if (el.id === "prevWeek" || el.id === "nextWeek") {
+      ui.week = Math.max(0, Math.min(2, ui.week + (el.id === "nextWeek" ? 1 : -1)));
+      ui.day = "all"; ui.limit = 40; ui.sel = null; render();
+    } else if (el.id === "resetBtn") {
+      if (!ui.resetArmed) { ui.resetArmed = true; el.textContent = "Click again to reset"; el.classList.add("armed"); setTimeout(() => { ui.resetArmed = false; el.textContent = "Reset sample data"; el.classList.remove("armed"); }, 3000); return; }
+      ui.resetArmed = false; el.textContent = "Reset sample data"; el.classList.remove("armed");
+      state = defaults(); seedBookings(); ui.sel = null; renderPrefs(); render(); toast("Sample schedule restored.");
+    }
+  });
+
+  $("#slotList").addEventListener("mouseover", (e) => { const li = e.target.closest(".slot"); if (li) drawGhost(visibleSlots[li.dataset.slot]); });
+  $("#slotList").addEventListener("focusin", (e) => { const li = e.target.closest(".slot"); if (li) drawGhost(visibleSlots[li.dataset.slot]); });
+  $("#slotList").addEventListener("mouseleave", () => drawGhost(null));
+  $("#fitsOnly").addEventListener("change", (e) => { ui.fitsOnly = e.target.checked; ui.limit = 40; renderSlots(); });
+  $("#sortSel").addEventListener("change", (e) => { ui.sort = e.target.value; renderSlots(); });
+  $("#prefFrom").addEventListener("change", (e) => { state.prefs.from = Number(e.target.value); save(); });
+  $("#prefTo").addEventListener("change", (e) => { state.prefs.to = Number(e.target.value); save(); });
+
+  $("#fDays").innerHTML = DAYS.map((d, i) => `<label><input type="checkbox" id="fDay${i}" value="${i}"${i === 1 || i === 3 ? " checked" : ""}><span>${d}</span></label>`).join("");
+  $("#addForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const name = $("#fName").value.trim();
+    const days = [...document.querySelectorAll("#fDays input:checked")].map((i) => Number(i.value));
+    const st = $("#fStart").value, en = $("#fEnd").value;
+    const err = $("#fErr");
+    if (!name) { err.textContent = "Give the activity a name."; $("#fName").focus(); return; }
+    if (!days.length) { err.textContent = "Pick at least one day."; return; }
+    if (!st || !en || toMin(en) <= toMin(st)) { err.textContent = "The end time has to be after the start time."; return; }
+    err.textContent = "";
+    const c = { id: uid(), name, cat: $("#fCat").value, days, start: toMin(st), end: toMin(en) };
+    state.commitments.push(c);
+    const clashes = weekBookings().filter((b) => c.days.includes(b.day) && b.start < c.end && b.end > c.start);
+    $("#fName").value = "";
+    ui.sel = { kind: "c", id: c.id };
+    toast(clashes.length ? `Added ${name}. It overlaps ${clashes.length} booked session${clashes.length > 1 ? "s" : ""}; check the planner.` : `Added ${name} to ${days.map((d) => DAYS[d]).join(", ")}.`);
+    render();
+  });
+
+  function todayIdx() { return (now().getDay() + 6) % 7; }
+
+  /* ---------- boot ---------- */
+  state = load() || defaults();
+  if (!state.bookings) seedBookings();
+  ui.day = "all";
+  renderLegend(); renderPrefs(); render();
+  setInterval(() => { renderGrid(); }, 60000);
+})();
+</script>
+</body>
+</html>
